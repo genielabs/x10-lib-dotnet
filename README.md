@@ -1,6 +1,12 @@
 # X10 Home Automation library for .NET
 
-Supports both **CM11** and **CM15** hardware. Compatible with Mono runtime.
+## Features
+
+- Supports both **CM11** and **CM15** hardware
+- Event driven
+- Hot plug
+- Automatically restabilish connection on error/disconnect
+- Compatible with Mono
 
 ## Requirements for using with CM15 interface
 
@@ -22,14 +28,12 @@ Install the CM15 LibUSB driver by executing the *InstallDriver.exe* file contain
     var x10 = new XTenManager();
 
     // Listen to XTenManager events
-    x10.ModuleChanged += delegate(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
+    x10.ModuleChanged += delegate(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
         var module = sender as X10Module;
         Console.WriteLine("Module property changed: {0} {1}", module.Code, e.PropertyName);
     };
     // This event is only used for CM15
-    x10.RfDataReceived += delegate(RfDataReceivedAction obj)
-    {
+    x10.RfDataReceived += delegate(RfDataReceivedAction obj) {
         Console.WriteLine("RF data received: {0}", BitConverter.ToString(obj.RawData));
     };
 

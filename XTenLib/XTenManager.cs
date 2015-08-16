@@ -1,18 +1,18 @@
 ﻿/*
     This file is part of XTenLib source code.
 
-    HomeGenie is free software: you can redistribute it and/or modify
+    XTenLib is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    HomeGenie is distributed in the hope that it will be useful,
+    XTenLib is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with HomeGenie.  If not, see <http://www.gnu.org/licenses/>.  
+    along with XTenLib.  If not, see <http://www.gnu.org/licenses/>.  
 */
 
 /*
@@ -651,6 +651,7 @@ namespace XTenLib
 
         private bool Open()
         {
+            Close();
             bool success = (x10interface != null && x10interface.Open());
             if (success)
             {
@@ -661,31 +662,30 @@ namespace XTenLib
                 }
                 // Start the Reader task
                 readerTokenSource = new CancellationTokenSource();
-                Task.Factory.StartNew(() => ReaderTask(readerTokenSource.Token), readerTokenSource.Token);
-
+                readerTask = Task.Factory.StartNew(() => ReaderTask(readerTokenSource.Token), readerTokenSource.Token);
             }
             return success;
         }
 
         private void Close()
         {
-            if (x10interface != null)
-            {
-                try
-                {
-                    x10interface.Close();
-                }
-                catch (Exception e)
-                {
-                    logger.Error(e);
-                }
-            }
             // Stop the Reader task
             if (readerTask != null)
             {
                 readerTokenSource.Cancel();
                 readerTask.Wait(5000);
                 readerTask.Dispose();
+                readerTask = null;
+                readerTokenSource = null;
+            }
+            // Dispose the X10 interface
+            try
+            {
+                x10interface.Close();
+            }
+            catch (Exception e)
+            {
+                logger.Error(e);
             }
             isInterfaceReady = false;
         }
