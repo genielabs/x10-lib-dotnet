@@ -1,6 +1,6 @@
-# X10 Home Automation library for .NET / Mono
+# X10 Home Automation library for .NET
 
-Supports both **CM11** and **CM15** hardware.
+Supports both **CM11** and **CM15** hardware. Compatible with Mono runtime.
 
 ## Requirements for using with CM15 interface
 
@@ -33,7 +33,8 @@ Install the CM15 LibUSB driver by executing the *InstallDriver.exe* file contain
         Console.WriteLine("RF data received: {0}", BitConverter.ToString(obj.RawData));
     };
 
-    // Setup X10 interface. For CM15 set PortName = "USB"; for CM11 use serial port path intead (eg. "COM7" or "/dev/ttyUSB0")
+    // Setup X10 interface. For CM15 set PortName = "USB",
+    // for CM11 use serial port path instead (eg. "COM7" or "/dev/ttyUSB0")
     x10.PortName = "USB";
     x10.HouseCode = "A,C";
 
@@ -55,6 +56,6 @@ Install the CM15 LibUSB driver by executing the *InstallDriver.exe* file contain
     // Disconnect the interface
     x10.Disconnect();
 
-## LICENSE
+## License
 
-[Please read the LICENSE file](LICENSE)
+XTenLib is open source software, licensed under the terms of GNU GPLV3 license. See the [LICENSE](LICENSE) file for details.

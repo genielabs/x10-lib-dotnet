@@ -9,3 +9,5 @@
 Thumbs.db
 *.suo
 *.userprefs
+packages/LibUsbDotNet*
+packages/NLog*
