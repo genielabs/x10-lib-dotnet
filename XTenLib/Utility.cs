@@ -196,3 +196,4 @@ namespace XTenLib
     }
 }
 
+#pragma warning restore 1591

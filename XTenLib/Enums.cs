@@ -24,6 +24,13 @@
 
 namespace XTenLib
 {
+    public enum X10Defs
+    {
+        RfCommandPrefix = 0x20,
+        RfSecurityPrefix = 0x29,
+        DimBrightStep = 0x0F
+    }
+
     public enum X10Command
     {
         All_Units_Off,
@@ -41,7 +48,8 @@ namespace XTenLib
         Extended_Data_transfer,
         Status_On,
         Status_Off,
-        Status_Request
+        Status_Request,
+        NotSet
     }
 
     public enum X10FunctionType
@@ -76,6 +84,7 @@ namespace XTenLib
 
     public enum X10HouseCode
     {
+        NotSet = 0xFF,
         A = 6,
         B = 14,
         C = 2,
@@ -96,6 +105,7 @@ namespace XTenLib
 
     public enum X10UnitCode
     {
+        Unit_NotSet = 0xFF,
         Unit_1 = 6,
         Unit_2 = 14,
         Unit_3 = 2,
@@ -113,4 +123,51 @@ namespace XTenLib
         Unit_15 = 4,
         Unit_16 = 12
     }
+
+    public enum X10RfFunction
+    {
+        NotSet = 0xFF,
+        On = 0x00,
+        Off = 0x01,
+        AllLightsOff = 0x80,
+        AllLightsOn = 0x90,
+        Dim = 0x98,
+        Bright = 0x88
+    }
+
+    public enum X10RfSecurityEvent
+    {
+        NotSet = 0xFF,
+
+        Motion_Alert = 0x0C,
+        Motion_Normal = 0x8C,
+
+        DoorSensor1_Alert = 0x04,
+        DoorSensor1_Normal = 0x84,
+        DoorSensor2_Alert = 0x00,
+        DoorSensor2_Normal = 0x80,
+        DoorSensor1_BatteryLow = 0x01,
+        DoorSensor1_BatteryOk = 0x81,
+        DoorSensor2_BatteryLow = 0x05,
+        DoorSensor2_BatteryOk = 0x85,
+
+        Remote_Arm = 0x06,
+        Remote_Disarm = 0x86,
+        Remote_LightOn = 0x46,
+        Remote_LightOff = 0xC6,
+        Remote_Panic = 0x26
+    }
+
+    public static class X10UnitCodeExt
+    {
+        public static int Value(this X10UnitCode uc)
+        {
+            var parts = uc.ToString().Split('_');
+            var unitCode = 0;
+            int.TryParse(parts[1], out unitCode);
+            return unitCode;
+        }
+    }
 }
+
+#pragma warning restore 1591

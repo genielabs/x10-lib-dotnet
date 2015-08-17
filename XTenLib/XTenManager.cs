@@ -76,6 +76,7 @@ namespace XTenLib
         // Variables used for preventing duplicated messages coming from RF
         private DateTime lastRfReceivedTs = DateTime.Now;
         private string lastRfMessage = "";
+        private uint minRfRepeatDelayMs = 500;
 
         // Read/Write error state variable
         private bool gotReadWriteError = true;
@@ -96,13 +97,68 @@ namespace XTenLib
         #region Public Events
 
         /// <summary>
+        /// Connected state changed event.
+        /// </summary>
+        public delegate void ConnectionStatusChangedEvent(object sender, ConnectionStatusChangedEventArgs args);
+
+        /// <summary>
+        /// Occurs when connected state changed.
+        /// </summary>
+        public event ConnectionStatusChangedEvent ConnectionStatusChanged;
+
+        /// <summary>
         /// Occurs when an X10 module changed.
         /// </summary>
         public event PropertyChangedEventHandler ModuleChanged;
+
+        /// <summary>
+        /// Plc address received event.
+        /// </summary>
+        public delegate void PlcAddressReceivedEvent(object sender, PlcAddressReceivedEventArgs args);
+        /// <summary>
+        /// Occurs when plc address received.
+        /// </summary>
+        public event PlcAddressReceivedEvent PlcAddressReceived;
+
+        /// <summary>
+        /// Plc function received event.
+        /// </summary>
+        public delegate void PlcFunctionReceivedEvent(object sender, PlcFunctionReceivedEventArgs args);
+        /// <summary>
+        /// Occurs when plc command received.
+        /// </summary>
+        public event PlcFunctionReceivedEvent PlcFunctionReceived;
+
+        /// <summary>
+        /// RF data received event.
+        /// </summary>
+        public delegate void RfDataReceivedEvent(object sender, RfDataReceivedEventArgs args);
+
         /// <summary>
         /// Occurs when RF data is received.
         /// </summary>
-        public event Action<RfDataReceivedAction> RfDataReceived;
+        public event RfDataReceivedEvent RfDataReceived;
+
+        /// <summary>
+        /// X10 command received event.
+        /// </summary>
+        public delegate void X10CommandReceivedEvent(object sender, RfCommandReceivedEventArgs args);
+
+        /// <summary>
+        /// Occurs when x10 command received.
+        /// </summary>
+        public event X10CommandReceivedEvent RfCommandReceived;
+
+        /// <summary>
+        /// X10 security data received event.
+        /// </summary>
+        public delegate void X10SecurityReceivedEvent(object sender, RfSecurityReceivedEventArgs args);
+
+        /// <summary>
+        /// Occurs when x10 security data is received.
+        /// </summary>
+        public event X10SecurityReceivedEvent RfSecurityReceived;
+
 
         #endregion
 
@@ -244,6 +300,15 @@ namespace XTenLib
             get { return modules; }
         }
 
+        /// <summary>
+        /// Gets the addressed modules.
+        /// </summary>
+        /// <value>The addressed modules list.</value>
+        public List<X10Module> AddressedModules
+        {
+            get { return addressedModules; }
+        }
+
         #endregion
 
         #region X10 Commands Implementation
@@ -379,13 +444,13 @@ namespace XTenLib
         /// <summary>
         /// Turn on all the light modules with the given housecode.
         /// </summary>
-        /// <param name="housecode">Housecode.</param>
-        public void AllLightsOn(X10HouseCode housecode)
+        /// <param name="houseCode">Housecode.</param>
+        public void AllLightsOn(X10HouseCode houseCode)
         {
             lock (commandLock)
             {
-                string hcunit = String.Format("{0:X}{1:X}", (int)housecode, 0);
-                string hcfuntion = String.Format("{0:x1}{1:x1}", (int)housecode, (int)X10Command.All_Lights_On);
+                string hcunit = String.Format("{0:X}{1:X}", (int)houseCode, 0);
+                string hcfuntion = String.Format("{0:x1}{1:x1}", (int)houseCode, (int)X10Command.All_Lights_On);
                 SendMessage(new byte[] {
                     (int)X10CommandType.Address,
                     byte.Parse(hcunit, System.Globalization.NumberStyles.HexNumber)
@@ -395,20 +460,20 @@ namespace XTenLib
                     byte.Parse(hcfuntion, System.Globalization.NumberStyles.HexNumber)
                 });
                 // TODO: pick only lights module
-                CommandEvent_AllLightsOn(housecode.ToString());
+                CommandEvent_AllLightsOn(houseCode);
             }
         }
 
         /// <summary>
         /// Turn off all the light modules with the given housecode.
         /// </summary>
-        /// <param name="housecode">Housecode.</param>
-        public void AllUnitsOff(X10HouseCode housecode)
+        /// <param name="houseCode">Housecode.</param>
+        public void AllUnitsOff(X10HouseCode houseCode)
         {
             lock (commandLock)
             {
-                string hcunit = String.Format("{0:X}{1:X}", (int)housecode, 0);
-                string hcfuntion = String.Format("{0:x1}{1:x1}", (int)housecode, (int)X10Command.All_Units_Off);
+                string hcunit = String.Format("{0:X}{1:X}", (int)houseCode, 0);
+                string hcfuntion = String.Format("{0:x1}{1:x1}", (int)houseCode, (int)X10Command.All_Units_Off);
                 SendMessage(new byte[] {
                     (int)X10CommandType.Address,
                     byte.Parse(hcunit, System.Globalization.NumberStyles.HexNumber)
@@ -418,7 +483,7 @@ namespace XTenLib
                     byte.Parse(hcfuntion, System.Globalization.NumberStyles.HexNumber)
                 });
                 // TODO: pick only lights module
-                CommandEvent_AllUnitsOff(housecode.ToString());
+                CommandEvent_AllUnitsOff(houseCode);
             }
         }
 
@@ -578,26 +643,26 @@ namespace XTenLib
             }
         }
 
-        private void CommandEvent_AllUnitsOff(string housecode)
+        private void CommandEvent_AllUnitsOff(X10HouseCode houseCode)
         {
             UnselectModules();
             // TODO: select only light modules 
             foreach (KeyValuePair<string, X10Module> modkv in modules)
             {
-                if (modkv.Value.Code.StartsWith(housecode))
+                if (modkv.Value.Code.StartsWith(houseCode.ToString()))
                 {
                     modkv.Value.Level = 0.0;
                 }
             }
         }
 
-        private void CommandEvent_AllLightsOn(string housecode)
+        private void CommandEvent_AllLightsOn(X10HouseCode houseCode)
         {
             UnselectModules();
             // TODO: pick only light modules 
             foreach (KeyValuePair<string, X10Module> modkv in modules)
             {
-                if (modkv.Value.Code.StartsWith(housecode))
+                if (modkv.Value.Code.StartsWith(houseCode.ToString()))
                 {
                     modkv.Value.Level = 1.0;
                 }
@@ -659,6 +724,7 @@ namespace XTenLib
                 {
                     // Set transceived house codes for CM15 X10 RF-->PLC
                     InitializeCm15();
+                    OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(true));
                 }
                 // Start the Reader task
                 readerTokenSource = new CancellationTokenSource();
@@ -687,7 +753,7 @@ namespace XTenLib
             {
                 logger.Error(e);
             }
-            isInterfaceReady = false;
+            OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
         }
 
         private void SendMessage(byte[] message)
@@ -789,8 +855,8 @@ namespace XTenLib
                         }
                         else if ((readData.Length >= 13 || (readData.Length == 2 && readData[0] == 0xFF && readData[1] == 0x00)) && !isInterfaceReady)
                         {
+                            OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(true));
                             UpdateInterfaceTime(false);
-                            isInterfaceReady = true;
                             communicationState = X10CommState.Ready;
                         }
                         else if (readData.Length == 2 && communicationState == X10CommState.WaitingChecksum && readData[0] == expectedChecksum && readData[1] == 0x00)
@@ -809,84 +875,130 @@ namespace XTenLib
                         else if (readData[0] == (int)X10CommandType.RF)
                         {
                             lastReceivedTs = DateTime.Now;
-                            string message = BitConverter.ToString(readData);
-                            logger.Debug("RFCOM: {0}", message);
-                            // repeated messages check
-                            if (lastRfMessage == message && (lastReceivedTs - lastRfReceivedTs).TotalMilliseconds < 200)
-                            {
-                                logger.Warn("RFCOM: Ignoring repeated message within 200ms");
-                                continue;
-                            }
-                            lastRfMessage = message;
-                            lastRfReceivedTs = lastReceivedTs;
 
-                            if (RfDataReceived != null)
+                            bool isSecurityCode = (readData.Length == 8 && readData[1] == (byte)X10Defs.RfSecurityPrefix && ((readData[3] ^ readData[2]) == 0x0F) && ((readData[5] ^ readData[4]) == 0xFF));
+                            bool isCodeValid = isSecurityCode || (readData.Length == 6 && readData[1] == (byte)X10Defs.RfCommandPrefix && ((readData[3] & ~readData[2]) == readData[3] && (readData[5] & ~readData[4]) == readData[5]));
+
+                            // Repeated messages check
+                            if (isCodeValid)
                             {
-                                Thread signal = new Thread(() =>
+                                if (lastRfMessage == BitConverter.ToString(readData) && (lastReceivedTs - lastRfReceivedTs).TotalMilliseconds < minRfRepeatDelayMs)
                                 {
-                                    try
-                                    {
-                                        RfDataReceived(new RfDataReceivedAction() { RawData = readData });
-                                    }
-                                    catch (Exception e)
-                                    { 
-                                        logger.Error(e);
-                                    }
-                                });
-                                signal.Start();
+                                    logger.Warn("Ignoring repeated message within {0}ms", minRfRepeatDelayMs);
+                                    continue;
+                                }
+                                lastRfMessage = BitConverter.ToString(readData);
+                                lastRfReceivedTs = DateTime.Now;
                             }
 
-                            // Decode X10 RF Module Command (eg. "5D 20 70 8F 48 B7")
-                            if (readData.Length == 6 && readData[1] == 0x20 && ((readData[3] & ~readData[2]) == readData[3] && (readData[5] & ~readData[4]) == readData[5]))
+                            logger.Debug("RFCOM: {0}", BitConverter.ToString(readData));
+                            OnRfDataReceived(new RfDataReceivedEventArgs(readData));
+
+                            // Decode received 32 bit message
+                            // house code + 4th bit of unit code
+                            // unit code (3 bits) + function code
+                            if (isSecurityCode)
                             {
-                                byte hu = readData[2]; // house code + 4th bit of unit code
-                                byte hf = readData[4]; // unit code (3 bits) + function code
-                                string houseCode = ((X10HouseCode)(Utility.ReverseByte((byte)(hu >> 4)) >> 4)).ToString();
+                                var securityEvent = X10RfSecurityEvent.NotSet;
+                                Enum.TryParse<X10RfSecurityEvent>(readData[4].ToString(), out securityEvent);
+                                uint securityAddress = BitConverter.ToUInt32(new byte[] { readData[2], readData[6], readData[7], 0x00 }, 0);
+                                if (securityEvent != X10RfSecurityEvent.NotSet)
+                                {
+                                    logger.Debug("Security Event {0} Address {1}", securityEvent, securityAddress);
+                                    OnRfSecurityReceived(new RfSecurityReceivedEventArgs(securityEvent, securityAddress));
+                                }
+                                else
+                                {
+                                    logger.Warn("Could not parse security event");
+                                }
+                            }
+                            else if (isCodeValid)
+                            {
+                                // Parse function code
+                                var hf = X10RfFunction.NotSet;
+                                Enum.TryParse<X10RfFunction>(readData[4].ToString(), out hf);
+                                // House code (4bit) + unit code (4bit)
+                                byte hu = readData[2];
+                                // Parse house code
+                                var houseCode = X10HouseCode.NotSet;
+                                Enum.TryParse<X10HouseCode>((Utility.ReverseByte((byte)(hu >> 4)) >> 4).ToString(), out houseCode);
                                 switch (hf)
                                 {
-                                case 0x98: // DIM ONE STEP
-                                    CommandEvent_Dim(0x0F);
+                                case X10RfFunction.Dim:
+                                case X10RfFunction.Bright:
+                                    logger.Debug("Command {0}", hf);
+                                    if (hf == X10RfFunction.Dim)
+                                        CommandEvent_Dim((byte)X10Defs.DimBrightStep);
+                                    else
+                                        CommandEvent_Bright((byte)X10Defs.DimBrightStep);
+                                    OnRfCommandReceived(new RfCommandReceivedEventArgs(hf, X10HouseCode.NotSet, X10UnitCode.Unit_NotSet));
                                     break;
-                                case 0x88: // BRIGHT ONE STEP
-                                    CommandEvent_Bright(0x0F);
-                                    break;
-                                case 0x90: // ALL LIGHTS ON
-                                    if (houseCode != "")
-                                        CommandEvent_AllLightsOn(houseCode);
-                                    break;
-                                case 0x80: // ALL LIGHTS OFF
-                                    if (houseCode != "")
-                                        CommandEvent_AllUnitsOff(houseCode);
-                                    break;
-                                default:
-                                    string houseUnit = Convert.ToString(hu, 2).PadLeft(8, '0');
-                                    string unitFunction = Convert.ToString(hf, 2).PadLeft(8, '0');
-                                    string unitCode = (Convert.ToInt16(houseUnit.Substring(5, 1) + unitFunction.Substring(1, 1) + unitFunction.Substring(4, 1) + unitFunction.Substring(3, 1), 2) + 1).ToString();
-
-                                    UnselectModules();
-                                    SelectModule(houseCode + unitCode);
-
-                                    if (unitFunction[2] == '1') // 1 = OFF, 0 = ON
+                                case X10RfFunction.AllLightsOn:
+                                case X10RfFunction.AllLightsOff:
+                                    if (houseCode != X10HouseCode.NotSet)
                                     {
-                                        CommandEvent_Off();
+                                        logger.Debug("Command {0} HouseCode {1}", hf, houseCode);
+                                        if (hf == X10RfFunction.AllLightsOn)
+                                            CommandEvent_AllLightsOn(houseCode);
+                                        else
+                                            CommandEvent_AllUnitsOff(houseCode);
+                                        OnRfCommandReceived(new RfCommandReceivedEventArgs(hf, houseCode, X10UnitCode.Unit_NotSet));
                                     }
                                     else
                                     {
-                                        CommandEvent_On();
+                                        logger.Warn("Unable to decode house code value");
+                                    }
+                                    break;
+                                case X10RfFunction.NotSet:
+                                    logger.Warn("Unable to decode function value");
+                                    break;
+                                default:
+                                    // Parse unit code
+                                    string houseUnit = Convert.ToString(hu, 2).PadLeft(8, '0');
+                                    string unitFunction = Convert.ToString(readData[4], 2).PadLeft(8, '0');
+                                    string uc = (Convert.ToInt16(houseUnit.Substring(5, 1) + unitFunction.Substring(1, 1) + unitFunction.Substring(4, 1) + unitFunction.Substring(3, 1), 2) + 1).ToString();
+                                    // Parse module function
+                                    var fn = X10RfFunction.NotSet;
+                                    Enum.TryParse<X10RfFunction>(unitFunction[2].ToString(), out fn);
+                                    switch (fn)
+                                    {
+                                    case X10RfFunction.On:
+                                    case X10RfFunction.Off:
+                                        var unitCode = X10UnitCode.Unit_NotSet;
+                                        Enum.TryParse<X10UnitCode>("Unit_" + uc.ToString(), out unitCode);
+                                        if (unitCode != X10UnitCode.Unit_NotSet)
+                                        {
+                                            logger.Debug("Command {0} HouseCode {1} UnitCode {2}", fn, houseCode, unitCode.Value());
+                                            UnselectModules();
+                                            SelectModule(houseCode.ToString() + unitCode.Value().ToString());
+                                            if (fn == X10RfFunction.On)
+                                                CommandEvent_On();
+                                            else
+                                                CommandEvent_Off();
+                                            OnRfCommandReceived(new RfCommandReceivedEventArgs(fn, houseCode, unitCode));
+                                        }
+                                        else
+                                        {
+                                            logger.Warn("Could not parse unit code");
+                                        }
+                                        break;
                                     }
                                     break;
                                 }
                             }
-
+                            else
+                            {
+                                logger.Warn("Bad Rf message received");
+                            }
                         }
                         else if ((readData[0] == (int)X10CommandType.PLC_Poll) && readData.Length <= 2)
                         {
-                            isInterfaceReady = true;
+                            OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(true));
                             SendMessage(new byte[] { (byte)X10CommandType.PLC_ReplyToPoll }); // reply to poll
                         }
                         else if ((readData[0] == (int)X10CommandType.PLC_FilterFail_Poll) && readData.Length <= 2)
                         {
-                            isInterfaceReady = true;
+                            OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(true));
                             SendMessage(new byte[] { (int)X10CommandType.PLC_FilterFail_Poll }); // reply to filter fail poll
                         }
                         else if ((readData[0] == (int)X10CommandType.PLC_Poll))
@@ -936,40 +1048,44 @@ namespace XTenLib
                                                 UnselectModules();
                                             }
                                             SelectModule(address);
+
+                                            OnPlcAddressReceived(new PlcAddressReceivedEventArgs(houseCode, unitCode));
                                         }
                                         else if (functionBitmap[b] == (byte)X10FunctionType.Function) // function
                                         {
-                                            string function = ((X10Command)Convert.ToInt16(messageData[b].ToString("X2").Substring(1, 1), 16)).ToString().ToUpper();
-                                            string houseCode = ((X10HouseCode)Convert.ToInt16(messageData[b].ToString("X2").Substring(0, 1), 16)).ToString();
-                                            //
+                                            var command = (X10Command)Convert.ToInt16(messageData[b].ToString("X2").Substring(1, 1), 16);
+                                            var houseCode = X10HouseCode.NotSet;
+                                            Enum.TryParse<X10HouseCode>(Convert.ToInt16(messageData[b].ToString("X2").Substring(0, 1), 16).ToString(), out houseCode);
+
                                             logger.Debug("      {0}) House code = {1}", b, houseCode);
-                                            logger.Debug("      {0})    Command = {1}", b, function);
-                                            //
-                                            switch (function)
+                                            logger.Debug("      {0})    Command = {1}", b, command);
+
+                                            switch (command)
                                             {
-                                            case "ALL_UNITS_OFF":
-                                                if (houseCode != "")
+                                            case X10Command.All_Lights_Off:
+                                                if (houseCode != X10HouseCode.NotSet)
                                                     CommandEvent_AllUnitsOff(houseCode);
                                                 break;
-                                            case "ALL_LIGHTS_ON":
-                                                if (houseCode != "")
+                                            case X10Command.All_Lights_On:
+                                                if (houseCode != X10HouseCode.NotSet)
                                                     CommandEvent_AllLightsOn(houseCode);
                                                 break;
-                                            case "ON":
+                                            case X10Command.On:
                                                 CommandEvent_On();
                                                 break;
-                                            case "OFF":
+                                            case X10Command.Off:
                                                 CommandEvent_Off();
                                                 break;
-                                            case "BRIGHT":
+                                            case X10Command.Bright:
                                                 CommandEvent_Bright(messageData[++b]);
                                                 break;
-                                            case "DIM":
+                                            case X10Command.Dim:
                                                 CommandEvent_Dim(messageData[++b]);
                                                 break;
                                             }
-                                            //
                                             newAddressData = true;
+
+                                            OnPlcFunctionReceived(new PlcFunctionReceivedEventArgs(command, houseCode));
                                         }
                                     }
                                 }
@@ -1028,7 +1144,7 @@ namespace XTenLib
             {
                 if (gotReadWriteError)
                 {
-                    isInterfaceReady = false;
+                    OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
                     try
                     {
                         UnselectModules();
@@ -1058,19 +1174,78 @@ namespace XTenLib
 
         #endregion
 
+        #region Events Raising
+
+        /// <summary>
+        /// Raises the connected state changed event.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        protected virtual void OnConnectionStatusChanged(ConnectionStatusChangedEventArgs args)
+        {
+            // ensure the status is really changing
+            if (isInterfaceReady != args.Connected)
+            {
+                isInterfaceReady = args.Connected;
+                // raise the event
+                if (ConnectionStatusChanged != null)
+                    ConnectionStatusChanged(this, args);
+            }
+        }
+
+        /// <summary>
+        /// Raises the plc address received event.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        protected virtual void OnPlcAddressReceived(PlcAddressReceivedEventArgs args)
+        {
+            if (PlcAddressReceived != null)
+                PlcAddressReceived(this, args);
+        }
+
+        /// <summary>
+        /// Raises the plc function received event.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        protected virtual void OnPlcFunctionReceived(PlcFunctionReceivedEventArgs args)
+        {
+            if (PlcFunctionReceived != null)
+                PlcFunctionReceived(this, args);
+        }
+
+        /// <summary>
+        /// Raises the rf data received event.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        protected virtual void OnRfDataReceived(RfDataReceivedEventArgs args)
+        {
+            if (RfDataReceived != null)
+                RfDataReceived(this, args);
+        }
+
+        /// <summary>
+        /// Raises the RF command received event.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        protected virtual void OnRfCommandReceived(RfCommandReceivedEventArgs args)
+        {
+            if (RfCommandReceived != null)
+                RfCommandReceived(this, args);
+        }
+
+        /// <summary>
+        /// Raises the RF security received event.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        protected virtual void OnRfSecurityReceived(RfSecurityReceivedEventArgs args)
+        {
+            if (RfSecurityReceived != null)
+                RfSecurityReceived(this, args);
+        }
+
         #endregion
 
-    }
+        #endregion
 
-    /// <summary>
-    /// Rf data received action.
-    /// </summary>
-    public class RfDataReceivedAction
-    {
-        /// <summary>
-        /// The raw data.
-        /// </summary>
-        public byte[] RawData;
     }
 
 }
