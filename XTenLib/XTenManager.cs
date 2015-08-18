@@ -212,7 +212,8 @@ namespace XTenLib
             {
                 watcherTokenSource.Cancel();
                 connectionWatcher.Wait(5000);
-                connectionWatcher.Dispose();
+                if (connectionWatcher != null)
+                    connectionWatcher.Dispose();
                 connectionWatcher = null;
                 watcherTokenSource = null;
             }
@@ -740,7 +741,8 @@ namespace XTenLib
             {
                 readerTokenSource.Cancel();
                 readerTask.Wait(5000);
-                readerTask.Dispose();
+                if (readerTask != null)
+                    readerTask.Dispose();
                 readerTask = null;
                 readerTokenSource = null;
             }
