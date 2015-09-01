@@ -99,12 +99,12 @@ namespace XTenLib
         /// <summary>
         /// Connected state changed event.
         /// </summary>
-        public delegate void ConnectionStatusChangedEvent(object sender, ConnectionStatusChangedEventArgs args);
+        public delegate void ConnectionStatusChangedEventHandler(object sender, ConnectionStatusChangedEventArgs args);
 
         /// <summary>
         /// Occurs when connected state changed.
         /// </summary>
-        public event ConnectionStatusChangedEvent ConnectionStatusChanged;
+        public event ConnectionStatusChangedEventHandler ConnectionStatusChanged;
 
         /// <summary>
         /// Occurs when an X10 module changed.
@@ -114,50 +114,50 @@ namespace XTenLib
         /// <summary>
         /// Plc address received event.
         /// </summary>
-        public delegate void PlcAddressReceivedEvent(object sender, PlcAddressReceivedEventArgs args);
+        public delegate void PlcAddressReceivedEventHandler(object sender, PlcAddressReceivedEventArgs args);
         /// <summary>
         /// Occurs when plc address received.
         /// </summary>
-        public event PlcAddressReceivedEvent PlcAddressReceived;
+        public event PlcAddressReceivedEventHandler PlcAddressReceived;
 
         /// <summary>
         /// Plc function received event.
         /// </summary>
-        public delegate void PlcFunctionReceivedEvent(object sender, PlcFunctionReceivedEventArgs args);
+        public delegate void PlcFunctionReceivedEventHandler(object sender, PlcFunctionReceivedEventArgs args);
         /// <summary>
         /// Occurs when plc command received.
         /// </summary>
-        public event PlcFunctionReceivedEvent PlcFunctionReceived;
+        public event PlcFunctionReceivedEventHandler PlcFunctionReceived;
 
         /// <summary>
         /// RF data received event.
         /// </summary>
-        public delegate void RfDataReceivedEvent(object sender, RfDataReceivedEventArgs args);
+        public delegate void RfDataReceivedEventHandler(object sender, RfDataReceivedEventArgs args);
 
         /// <summary>
         /// Occurs when RF data is received.
         /// </summary>
-        public event RfDataReceivedEvent RfDataReceived;
+        public event RfDataReceivedEventHandler RfDataReceived;
 
         /// <summary>
         /// X10 command received event.
         /// </summary>
-        public delegate void X10CommandReceivedEvent(object sender, RfCommandReceivedEventArgs args);
+        public delegate void X10CommandReceivedEventHandler(object sender, RfCommandReceivedEventArgs args);
 
         /// <summary>
         /// Occurs when x10 command received.
         /// </summary>
-        public event X10CommandReceivedEvent RfCommandReceived;
+        public event X10CommandReceivedEventHandler RfCommandReceived;
 
         /// <summary>
         /// X10 security data received event.
         /// </summary>
-        public delegate void X10SecurityReceivedEvent(object sender, RfSecurityReceivedEventArgs args);
+        public delegate void X10SecurityReceivedEventHandler(object sender, RfSecurityReceivedEventArgs args);
 
         /// <summary>
         /// Occurs when x10 security data is received.
         /// </summary>
-        public event X10SecurityReceivedEvent RfSecurityReceived;
+        public event X10SecurityReceivedEventHandler RfSecurityReceived;
 
 
         #endregion
@@ -211,7 +211,14 @@ namespace XTenLib
             if (connectionWatcher != null)
             {
                 watcherTokenSource.Cancel();
-                connectionWatcher.Wait(5000);
+                try
+                {
+                    connectionWatcher.Wait(5000);
+                }
+                catch (AggregateException e)
+                {
+                    logger.Error(e);
+                }
                 if (connectionWatcher != null)
                     connectionWatcher.Dispose();
                 connectionWatcher = null;
@@ -740,7 +747,14 @@ namespace XTenLib
             if (readerTask != null)
             {
                 readerTokenSource.Cancel();
-                readerTask.Wait(5000);
+                try
+                {
+                    readerTask.Wait(5000);
+                }
+                catch (AggregateException e)
+                {
+                    logger.Error(e);
+                }
                 if (readerTask != null)
                     readerTask.Dispose();
                 readerTask = null;

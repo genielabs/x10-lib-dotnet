@@ -70,42 +70,42 @@ x10.Disconnect();
 
 //...
 
-static void X10_ConnectionStatusChanged(object sender, ConnectionStatusChangedEventArgs args)
+void X10_ConnectionStatusChanged(object sender, ConnectionStatusChangedEventArgs args)
 {
     Console.WriteLine("Interface connection status {0}", args.Connected);
 }
 
-static void X10_ModuleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+void X10_ModuleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
 {
     var module = sender as X10Module;
     Console.WriteLine("Module property changed: {0} {1} = {2}", 
         module.Code, e.PropertyName, module.Level);
 }
 
-static void X10_PlcAddressReceived (object sender, PlcAddressReceivedEventArgs args)
+void X10_PlcAddressReceived(object sender, PlcAddressReceivedEventArgs args)
 {
     Console.WriteLine("PLC address received: HouseCode {0} Unit {1}", 
         args.HouseCode, args.UnitCode);
 }
 
-static void X10_PlcFunctionReceived (object sender, PlcFunctionReceivedEventArgs args)
+void X10_PlcFunctionReceived(object sender, PlcFunctionReceivedEventArgs args)
 {
     Console.WriteLine("PLC function received: Command {0} HouseCode {1}", 
         args.Command, args.HouseCode);
 }
 
-static void X10_RfDataReceived(object sender, RfDataReceivedEventArgs args)
+void X10_RfDataReceived(object sender, RfDataReceivedEventArgs args)
 {
     Console.WriteLine("RF data received: {0}", BitConverter.ToString(args.Data));
 }
 
-static void X10_RfCommandReceived(object sender, RfCommandReceivedEventArgs args)
+void X10_RfCommandReceived(object sender, RfCommandReceivedEventArgs args)
 {
     Console.WriteLine("Received RF command {0} House Code {1} Unit {2}", 
         args.Command, args.HouseCode, args.UnitCode);
 }
 
-static void X10_RfSecurityReceived(object sender, RfSecurityReceivedEventArgs args)
+void X10_RfSecurityReceived(object sender, RfSecurityReceivedEventArgs args)
 {
     Console.WriteLine("Received RF Security event {0} from address {1}", 
         args.Event, args.Address.ToString("X3"));

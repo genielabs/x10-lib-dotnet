@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>XTenLib</id>
-        <version>1.0.2</version>
+        <version>1.0.4</version>
         <title>XTenLib</title>
         <authors>Generoso Martello</authors>
         <owners>G-Labs</owners>
@@ -18,11 +18,11 @@ Features
 - Automatically restabilish connection on error/disconnect
 - Compatible with Mono</description>
         <summary>X10 Home Automation library for .Net / Mono</summary>
-        <releaseNotes>Event names refactoring, see new examples on github.</releaseNotes>
+        <releaseNotes>Updated dependencies.</releaseNotes>
         <copyright>G-Labs</copyright>
         <tags>x10 home automation cm11 cm15</tags>
         <dependencies>
-            <dependency id="NLog" version="4.0.1" />
+            <dependency id="NLog" version="4.1.0" />
             <dependency id="LibUsbDotNet" version="2.2.8" />
         </dependencies>
     </metadata>
