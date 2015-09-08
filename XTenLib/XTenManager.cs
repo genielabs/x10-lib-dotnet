@@ -895,6 +895,10 @@ namespace XTenLib
                             bool isSecurityCode = (readData.Length == 8 && readData[1] == (byte)X10Defs.RfSecurityPrefix && ((readData[3] ^ readData[2]) == 0x0F) && ((readData[5] ^ readData[4]) == 0xFF));
                             bool isCodeValid = isSecurityCode || (readData.Length == 6 && readData[1] == (byte)X10Defs.RfCommandPrefix && ((readData[3] & ~readData[2]) == readData[3] && (readData[5] & ~readData[4]) == readData[5]));
 
+                            // Still unknown meaning of the last byte in security codes
+                            if (isSecurityCode && readData[7] == 0x80)
+                                readData[7] = 0x00;
+                            
                             // Repeated messages check
                             if (isCodeValid)
                             {

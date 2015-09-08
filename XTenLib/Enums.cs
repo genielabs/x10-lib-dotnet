@@ -142,10 +142,19 @@ namespace XTenLib
         Motion_Alert = 0x0C,
         Motion_Normal = 0x8C,
 
+        Motion_BatteryLow = 0x0D,
+        Motion_BatteryOk = 0x8D,
+
         DoorSensor1_Alert = 0x04,
         DoorSensor1_Normal = 0x84,
+        DoorSensor1_Alert_Tarmper = 0x44,
+        DoorSensor1_Normal_Tamper = 0xC4,
+
         DoorSensor2_Alert = 0x00,
         DoorSensor2_Normal = 0x80,
+        DoorSensor2_Alert_Tamper = 0x40,
+        DoorSensor2_Normal_Tamper = 0xC0,
+
         DoorSensor1_BatteryLow = 0x01,
         DoorSensor1_BatteryOk = 0x81,
         DoorSensor2_BatteryLow = 0x05,
@@ -155,7 +164,8 @@ namespace XTenLib
         Remote_Disarm = 0x86,
         Remote_LightOn = 0x46,
         Remote_LightOff = 0xC6,
-        Remote_Panic = 0x26
+        Remote_Panic = 0x26,
+        Remote_Panic_15 = 0x03
     }
 
     public static class X10UnitCodeExt
