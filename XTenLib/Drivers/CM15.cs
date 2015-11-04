@@ -129,7 +129,6 @@ namespace XTenLib.Drivers
         /// </summary>
         public void Close()
         {
-            this.Dispose();
             if (myUsbDevice != null)
             {
                 if (myUsbDevice.DriverMode == UsbDevice.DriverModeType.MonoLibUsb)
@@ -144,6 +143,8 @@ namespace XTenLib.Drivers
                     }
                 }
                 myUsbDevice = null;
+                UsbDevice.Exit();
+                this.Dispose();
             }
         }
 

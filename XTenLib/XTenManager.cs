@@ -82,12 +82,13 @@ namespace XTenLib
         private bool gotReadWriteError = true;
 
         // X10 interface reader Task
-        private Task readerTask;
-        private CancellationTokenSource readerTokenSource;
+        private Thread reader;
 
         // X10 interface connection watcher
-        private Task connectionWatcher;
-        private CancellationTokenSource watcherTokenSource;
+        private Thread connectionWatcher;
+
+        private object accessLock = new object();
+        private bool disconnectRequested = false;
 
         // This is used on Linux/Mono for detecting when the link gets disconnected
         private int zeroChecksumCount = 0;
@@ -195,12 +196,16 @@ namespace XTenLib
         /// </summary>
         public bool Connect()
         {
-            Disconnect();
-            bool returnValue = Open();
-            gotReadWriteError = !returnValue;
-            watcherTokenSource = new CancellationTokenSource();
-            connectionWatcher = Task.Factory.StartNew(() => ConnectionWatcherTask(watcherTokenSource.Token), watcherTokenSource.Token);
-            return returnValue;
+            if (disconnectRequested)
+                return false;
+            lock (accessLock)
+            {
+                Disconnect();
+                Open();
+                connectionWatcher = new Thread(ConnectionWatcherTask);
+                connectionWatcher.Start();
+            }
+            return IsConnected;
         }
 
         /// <summary>
@@ -208,23 +213,20 @@ namespace XTenLib
         /// </summary>
         public void Disconnect()
         {
-            if (connectionWatcher != null)
-            {
-                watcherTokenSource.Cancel();
-                try
-                {
-                    connectionWatcher.Wait(5000);
-                }
-                catch (AggregateException e)
-                {
-                    logger.Error(e);
-                }
-                if (connectionWatcher != null)
-                    connectionWatcher.Dispose();
-                connectionWatcher = null;
-                watcherTokenSource = null;
-            }
+            if (disconnectRequested)
+                return;
+            disconnectRequested = true;
             Close();
+            lock (accessLock)
+            {
+                if (connectionWatcher != null)
+                {
+                    if (!connectionWatcher.Join(5000))
+                        connectionWatcher.Abort();
+                    connectionWatcher = null;
+                }
+                disconnectRequested = false;
+            }
         }
 
         /// <summary>
@@ -233,7 +235,7 @@ namespace XTenLib
         /// <value><c>true</c> if connected; otherwise, <c>false</c>.</value>
         public bool IsConnected
         {
-            get { return isInterfaceReady || (!gotReadWriteError && x10interface.GetType().Equals(typeof(CM15))); }
+            get { return (x10interface != null && !disconnectRequested && (isInterfaceReady || (!gotReadWriteError && x10interface.GetType().Equals(typeof(CM15))))); }
         }
 
         /// <summary>
@@ -248,8 +250,10 @@ namespace XTenLib
             {
                 if (portName != value)
                 {
+                    // set to erro so that the connection watcher will reconnect
+                    // using the new port
                     Close();
-
+                    // instantiate the requested interface
                     if (value.ToUpper() == "USB")
                     {
                         x10interface = new CM15();
@@ -258,8 +262,6 @@ namespace XTenLib
                     {
                         x10interface = new CM11(value);
                     }
-
-                    gotReadWriteError = true;
                 }
                 portName = value;
             }
@@ -724,52 +726,54 @@ namespace XTenLib
 
         private bool Open()
         {
-            Close();
-            bool success = (x10interface != null && x10interface.Open());
-            if (success)
+            bool success = false;
+            lock (accessLock)
             {
-                if (x10interface.GetType().Equals(typeof(CM15)))
+                Close();
+                success = (x10interface != null && x10interface.Open());
+                if (success)
                 {
-                    // Set transceived house codes for CM15 X10 RF-->PLC
-                    InitializeCm15();
-                    OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(true));
+                    if (x10interface.GetType().Equals(typeof(CM15)))
+                    {
+                        // Set transceived house codes for CM15 X10 RF-->PLC
+                        InitializeCm15();
+                        // For CM15 we do not need to receive ACK message to claim status as connected
+                        OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(true));
+                    }
+                    // Start the Reader task
+                    gotReadWriteError = false;
+                    // Start the Reader task
+                    reader = new Thread(ReaderTask);
+                    reader.Start();
                 }
-                // Start the Reader task
-                readerTokenSource = new CancellationTokenSource();
-                readerTask = Task.Factory.StartNew(() => ReaderTask(readerTokenSource.Token), readerTokenSource.Token);
             }
             return success;
         }
 
         private void Close()
         {
-            // Stop the Reader task
-            if (readerTask != null)
+            UnselectModules();
+            lock (accessLock)
             {
-                readerTokenSource.Cancel();
+                // Dispose the X10 interface
                 try
                 {
-                    readerTask.Wait(5000);
+                    x10interface.Close();
                 }
-                catch (AggregateException e)
+                catch (Exception e)
                 {
                     logger.Error(e);
                 }
-                if (readerTask != null)
-                    readerTask.Dispose();
-                readerTask = null;
-                readerTokenSource = null;
+                gotReadWriteError = true;
+                // Stop the Reader task
+                if (reader != null)
+                {
+                    if (!reader.Join(5000))
+                        reader.Abort();
+                    reader = null;
+                }
+                OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
             }
-            // Dispose the X10 interface
-            try
-            {
-                x10interface.Close();
-            }
-            catch (Exception e)
-            {
-                logger.Error(e);
-            }
-            OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
         }
 
         private void SendMessage(byte[] message)
@@ -846,9 +850,9 @@ namespace XTenLib
             }
         }
 
-        private void ReaderTask(CancellationToken readerToken)
+        private void ReaderTask()
         {
-            while (!readerToken.IsCancellationRequested)
+            while (IsConnected)
             {
                 try
                 {
@@ -1133,7 +1137,6 @@ namespace XTenLib
                             {
                                 zeroChecksumCount = 0;
                                 gotReadWriteError = true;
-                                Close();
                             }
                             else
                             {
@@ -1156,26 +1159,24 @@ namespace XTenLib
             }
         }
 
-        private void ConnectionWatcherTask(CancellationToken watcherToken)
+        private void ConnectionWatcherTask()
         {
             // This task takes care of automatically reconnecting the interface
             // when the connection is drop or if an I/O error occurs
-            while (!watcherToken.IsCancellationRequested)
+            while (!disconnectRequested)
             {
                 if (gotReadWriteError)
                 {
-                    OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
                     try
                     {
-                        UnselectModules();
                         Close();
                         // wait 3 secs before reconnecting
                         Thread.Sleep(3000);
-                        if (!watcherToken.IsCancellationRequested)
+                        if (!disconnectRequested)
                         {
                             try
                             {
-                                gotReadWriteError = !Open();
+                                Open();
                             }
                             catch (Exception e)
                             { 
@@ -1188,7 +1189,8 @@ namespace XTenLib
                         logger.Error(e);
                     }
                 }
-                Thread.Sleep(1000);
+                if (!disconnectRequested)
+                    Thread.Sleep(1000);
             }
         }
 
