@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>XTenLib</id>
-        <version>1.0.6</version>
+        <version>1.0.7</version>
         <title>XTenLib</title>
         <authors>Generoso Martello</authors>
         <owners>G-Labs</owners>
@@ -18,7 +18,7 @@ Features
 - Automatically restabilish connection on error/disconnect
 - Compatible with Mono</description>
         <summary>X10 Home Automation library for .Net / Mono</summary>
-        <releaseNotes>Added missing Tamper event to RF Security decode.</releaseNotes>
+        <releaseNotes>Fixed CM11 driver bug.</releaseNotes>
         <copyright>G-Labs</copyright>
         <tags>x10 home automation cm11 cm15</tags>
         <dependencies>

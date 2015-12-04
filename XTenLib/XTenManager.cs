@@ -852,7 +852,7 @@ namespace XTenLib
 
         private void ReaderTask()
         {
-            while (IsConnected)
+            while (x10interface != null && !disconnectRequested)
             {
                 try
                 {
