@@ -1,5 +1,6 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/tpg5mnp8a4j2ehgg?svg=true)](https://ci.appveyor.com/project/genemars/x10-lib-dotnet)
 [![NuGet](https://img.shields.io/nuget/v/XTenLib.svg)](https://www.nuget.org/packages/XTenLib/)
+![License](https://img.shields.io/github/license/genielabs/x10-lib-dotnet.svg)
 
 # X10 Home Automation library for .NET
 
@@ -117,4 +118,4 @@ void X10_RfSecurityReceived(object sender, RfSecurityReceivedEventArgs args)
 
 ## License
 
-XTenLib is open source software, licensed under the terms of GNU GPLV3 license. See the [LICENSE](LICENSE) file for details.
+XTenLib is open source software, licensed under the terms of Apache license 2.0. See the [LICENSE](LICENSE) file for details.
