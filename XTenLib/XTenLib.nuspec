@@ -28,7 +28,6 @@ Features
     </metadata>
     <files>
         <file src="bin\Debug\XTenLib.dll" target="lib\XTenLib.dll" />
-        <file src="bin\Debug\XTenLib.dll.mdb" target="lib\XTenLib.dll.mdb" />
         <file src="bin\Debug\XTenLib.xml" target="lib\XTenLib.xml" />
     </files>
 </package>
