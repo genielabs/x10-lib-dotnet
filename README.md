@@ -1,3 +1,6 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/tpg5mnp8a4j2ehgg?svg=true)](https://ci.appveyor.com/project/genemars/x10-lib-dotnet)
+[![NuGet](https://img.shields.io/nuget/v/XTenLib.svg)](https://www.nuget.org/packages/XTenLib/)
+
 # X10 Home Automation library for .NET
 
 ## Features

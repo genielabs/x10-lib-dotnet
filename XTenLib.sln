@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XTenLib", "XTenLib\XTenLib.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.X10", "Test.X10\Test.X10.csproj", "{F294E092-807A-493C-85AD-BB8AA5C5AB22}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XTenLib.Tests", "XTenLib.Tests\XTenLib.Tests.csproj", "{3F2ECBE2-8D4E-4363-88DE-29478CBFACF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{F294E092-807A-493C-85AD-BB8AA5C5AB22}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F294E092-807A-493C-85AD-BB8AA5C5AB22}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F294E092-807A-493C-85AD-BB8AA5C5AB22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F2ECBE2-8D4E-4363-88DE-29478CBFACF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F2ECBE2-8D4E-4363-88DE-29478CBFACF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F2ECBE2-8D4E-4363-88DE-29478CBFACF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F2ECBE2-8D4E-4363-88DE-29478CBFACF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
