@@ -6,8 +6,12 @@
 [Bb]in/
 [Oo]bj/
 
+# NuGet
+packages
+!packages/repositories.config
+
+# Misc
 Thumbs.db
 *.suo
 *.userprefs
 .idea
-packages
