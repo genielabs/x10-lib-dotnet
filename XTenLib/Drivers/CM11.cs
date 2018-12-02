@@ -22,7 +22,6 @@
  */
 
 using System;
-using System.IO;
 using System.IO.Ports;
 
 namespace XTenLib.Drivers
@@ -32,8 +31,10 @@ namespace XTenLib.Drivers
     /// </summary>
     public class CM11 : XTenInterface
     {
+        const int BufferLength = 32;
+
         private SerialPort serialPort;
-        private string portName = "";
+        private readonly string portName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XTenLib.Drivers.CM11"/> class.
@@ -50,7 +51,6 @@ namespace XTenLib.Drivers
         public bool Open()
         {
             bool success = false;
-            //
             try
             {
                 bool tryOpen = (serialPort == null);
@@ -72,21 +72,20 @@ namespace XTenLib.Drivers
 
                     // DataReceived event won't work under Linux / Mono
                     //serialPort.DataReceived += HandleDataReceived;
-                    //serialPort.ErrorReceived += HanldeErrorReceived;
+                    //serialPort.ErrorReceived += HandleErrorReceived;
                 }
                 if (serialPort.IsOpen == false)
                 {
                     serialPort.Open();
                 }
                 // Send staus request on connection
-                this.WriteData(new byte[] { 0x8B });
+                WriteData(new byte[] { 0x8B });
                 success = true;
             }
             catch (Exception e)
             {
                 XTenManager.logger.Error(e);
             }
-
             return success;
         }
 
@@ -98,7 +97,7 @@ namespace XTenLib.Drivers
             if (serialPort != null)
             {
                 //serialPort.DataReceived -= HandleDataReceived
-                //serialPort.ErrorReceived -= HanldeErrorReceived;
+                //serialPort.ErrorReceived -= HandleErrorReceived;
                 try
                 {
                     //serialPort.Dispose();
@@ -118,19 +117,18 @@ namespace XTenLib.Drivers
         /// <returns>The data.</returns>
         public byte[] ReadData()
         {
-            int buflen = 32;
             int length = 0;
             int readBytes = 0;
-            byte[] buffer = new byte[buflen];
+            byte[] buffer = new byte[BufferLength];
             do
             {
-                readBytes = serialPort.Read(buffer, length, buflen - length);
+                readBytes = serialPort.Read(buffer, length, BufferLength - length);
                 length += readBytes;
                 if (length > 1 && buffer[0] < length)
                     break;
                 else if (buffer[0] > 0x10 && serialPort.BytesToRead == 0)
                     break;
-            } while (readBytes > 0 && (buflen - length > 0));
+            } while (readBytes > 0 && (BufferLength - length > 0));
 
             byte[] readData = new byte[length + 1];
             if (length > 1 && length < 13)

@@ -25,7 +25,6 @@ using System;
 using System.Threading;
 
 using LibUsbDotNet;
-using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
 
 namespace XTenLib.Drivers
@@ -35,21 +34,18 @@ namespace XTenLib.Drivers
     /// </summary>
     public class CM15 : XTenInterface, IDisposable
     {
-        private UsbDeviceFinder MyUsbFinder = new UsbDeviceFinder(0x0BC7, 0x0001);
-        //Use the first read endpoint
-        //private readonly byte TRANFER_ENDPOINT = UsbConstants.ENDPOINT_DIR_MASK;
-        // Number of transfers to sumbit before waiting begins</summary>
-        //private readonly int TRANFER_MAX_OUTSTANDING_IO = 3;
-        // Number of transfers before terminating the test
-        //private readonly int TRANSFER_COUNT = 30;
-        // Size of each transfer
-        //private int TRANFER_SIZE = 16;
+        // Timeout
+        private const int TransferTimeout = 1000;
+        // Max size of each transfer
+        private const int TransferSize = 8;
+        // Max packet size
+        private const int MaxPacketSize = 16;
 
-        //private DateTime startTime = DateTime.MinValue;
+        private readonly UsbDeviceFinder myUsbFinder = new UsbDeviceFinder(0x0BC7, 0x0001);
         private UsbDevice myUsbDevice;
 
-        private UsbEndpointReader reader = null;
-        private UsbEndpointWriter writer = null;
+        private UsbEndpointReader reader;
+        private UsbEndpointWriter writer;
 
         /// <summary>
         /// Releases all resource used by the <see cref="XTenLib.Drivers.CM15"/> object.
@@ -60,24 +56,22 @@ namespace XTenLib.Drivers
         /// the garbage collector can reclaim the memory that the <see cref="XTenLib.Drivers.CM15"/> was occupying.</remarks>
         public void Dispose()
         {
-            if (myUsbDevice != null && myUsbDevice.IsOpen)
+            if (myUsbDevice == null || !myUsbDevice.IsOpen) return;
+            try
             {
-                try
-                {
-                    reader.Abort();
-                }
-                catch (Exception e)
-                {
-                    XTenManager.logger.Error(e);
-                }
-                try
-                {
-                    writer.Abort();
-                }
-                catch (Exception e)
-                {
-                    XTenManager.logger.Error(e);
-                }
+                reader.Abort();
+            }
+            catch (Exception e)
+            {
+                XTenManager.logger.Error(e);
+            }
+            try
+            {
+                writer.Abort();
+            }
+            catch (Exception e)
+            {
+                XTenManager.logger.Error(e);
             }
         }
 
@@ -91,7 +85,7 @@ namespace XTenLib.Drivers
             try
             {
                 // Find and open the usb device.
-                myUsbDevice = UsbDevice.OpenUsbDevice(MyUsbFinder);
+                myUsbDevice = UsbDevice.OpenUsbDevice(myUsbFinder);
                 // If the device is open and ready
                 if (myUsbDevice == null)
                     throw new Exception("X10 CM15Pro device not connected.");
@@ -114,8 +108,8 @@ namespace XTenLib.Drivers
                 reader = myUsbDevice.OpenEndpointReader(ReadEndpointID.Ep01);
                 // open write endpoint 2.
                 writer = myUsbDevice.OpenEndpointWriter(WriteEndpointID.Ep02);
-                // status request
-                this.WriteData(new byte[] { 0x8B });
+                // CM15 initialization / status request
+                WriteData(new byte[] { 0x8B });
             }
             catch (Exception e)
             {
@@ -130,23 +124,21 @@ namespace XTenLib.Drivers
         /// </summary>
         public void Close()
         {
-            if (myUsbDevice != null)
+            if (myUsbDevice == null) return;
+            if (myUsbDevice.DriverMode == UsbDevice.DriverModeType.MonoLibUsb)
             {
-                if (myUsbDevice.DriverMode == UsbDevice.DriverModeType.MonoLibUsb)
+                try
                 {
-                    try
-                    {
-                        myUsbDevice.Close();
-                    }
-                    catch (Exception e)
-                    {
-                        XTenManager.logger.Error(e);
-                    }
+                    myUsbDevice.Close();
                 }
-                myUsbDevice = null;
-                UsbDevice.Exit();
-                this.Dispose();
+                catch (Exception e)
+                {
+                    XTenManager.logger.Error(e);
+                }
             }
+            myUsbDevice = null;
+            UsbDevice.Exit();
+            Dispose();
         }
 
         /// <summary>
@@ -155,28 +147,26 @@ namespace XTenLib.Drivers
         /// <returns>The data.</returns>
         public byte[] ReadData()
         {
-            ErrorCode ecRead;
             int transferredIn;
-            UsbTransfer usbReadTransfer = null;
-            byte[] readBuffer;
+            UsbTransfer usbReadTransfer;
             //
-            readBuffer = new byte[16];
-            ecRead = reader.SubmitAsyncTransfer(readBuffer, 0, 8, 1000, out usbReadTransfer);
+            var readBuffer = new byte[MaxPacketSize];
+            var ecRead = reader.SubmitAsyncTransfer(readBuffer, 0, TransferSize, TransferTimeout, out usbReadTransfer);
             if (ecRead != ErrorCode.None)
             {
                 throw new Exception("Submit Async Read Failed.");
             }
-            WaitHandle.WaitAll(new WaitHandle[] { usbReadTransfer.AsyncWaitHandle }, 1000, false);
+            WaitHandle.WaitAll(new WaitHandle[] { usbReadTransfer.AsyncWaitHandle }, TransferTimeout, false);
             ecRead = usbReadTransfer.Wait(out transferredIn);
 
             if (!usbReadTransfer.IsCompleted)
             {
-                ecRead = reader.SubmitAsyncTransfer(readBuffer, 8, 8, 1000, out usbReadTransfer);
+                ecRead = reader.SubmitAsyncTransfer(readBuffer, transferredIn, MaxPacketSize-transferredIn, TransferTimeout, out usbReadTransfer);
                 if (ecRead != ErrorCode.None)
                 {
                     throw new Exception("Submit Async Read Failed.");
                 }
-                WaitHandle.WaitAll(new WaitHandle[] { usbReadTransfer.AsyncWaitHandle }, 1000, false);
+                WaitHandle.WaitAll(new WaitHandle[] { usbReadTransfer.AsyncWaitHandle }, TransferTimeout, false);
             }
 
             if (!usbReadTransfer.IsCompleted)
@@ -191,10 +181,10 @@ namespace XTenLib.Drivers
             }
             usbReadTransfer.Dispose();
 
-            byte[] readdata = new byte[transferredIn];
-            Array.Copy(readBuffer, readdata, transferredIn);
+            byte[] readData = new byte[transferredIn];
+            Array.Copy(readBuffer, readData, transferredIn);
 
-            return readdata;
+            return readData;
         }
 
         /// <summary>
@@ -204,28 +194,23 @@ namespace XTenLib.Drivers
         /// <param name="bytesToSend">Bytes to send.</param>
         public bool WriteData(byte[] bytesToSend)
         {
-            ErrorCode ecWrite;
-            int transferredOut;
-            UsbTransfer usbWriteTransfer = null;
-
-            if (myUsbDevice != null)
+            if (myUsbDevice == null) return false;
+            UsbTransfer usbWriteTransfer;
+            var ecWrite = writer.SubmitAsyncTransfer(bytesToSend, 0, bytesToSend.Length, TransferTimeout, out usbWriteTransfer);
+            if (ecWrite != ErrorCode.None)
             {
-                ecWrite = writer.SubmitAsyncTransfer(bytesToSend, 0, bytesToSend.Length, 1000, out usbWriteTransfer);
-                if (ecWrite != ErrorCode.None)
-                {
-                    throw new Exception("Submit Async Write Failed.");
-                }
-
-                WaitHandle.WaitAll(new WaitHandle[] { usbWriteTransfer.AsyncWaitHandle }, 1000, false);
-
-                if (!usbWriteTransfer.IsCompleted)
-                    usbWriteTransfer.Cancel();
-                ecWrite = usbWriteTransfer.Wait(out transferredOut);
-                usbWriteTransfer.Dispose();
-                // TODO: should check if (transferredOut != bytesToSend.Length), and eventually resend?
-                return true;
+                throw new Exception("Submit Async Write Failed.");
             }
-            return false;
+
+            WaitHandle.WaitAll(new WaitHandle[] { usbWriteTransfer.AsyncWaitHandle }, TransferTimeout, false);
+
+            if (!usbWriteTransfer.IsCompleted)
+                usbWriteTransfer.Cancel();
+            int transferredOut;
+            ecWrite = usbWriteTransfer.Wait(out transferredOut);
+            usbWriteTransfer.Dispose();
+            // TODO: should check if (transferredOut != bytesToSend.Length), and eventually resend?
+            return true;
         }
 
         internal static byte[] BuildTransceivedCodesMessage(string csMonitoredCodes)
@@ -300,8 +285,8 @@ namespace XTenLib.Drivers
             byte b1 = (byte)(transceivedCodes >> 8);
             byte b2 = (byte)(transceivedCodes);
 
-            //byte[] trcommand = new byte[] { 0xbb, 0xff, 0xff, 0x05, 0x00, 0x14, 0x20, 0x28, 0x24, 0x29 }; // transceive all
-            //byte[] trcommand = new byte[] { 0xbb, 0x40, 0x00, 0x05, 0x00, 0x14, 0x20, 0x28, 0x24, 0x29 }; // autodetect
+            //byte[] trCommand = new byte[] { 0xbb, 0xff, 0xff, 0x05, 0x00, 0x14, 0x20, 0x28, 0x24, 0x29 }; // transceive all
+            //byte[] trCommand = new byte[] { 0xbb, 0x40, 0x00, 0x05, 0x00, 0x14, 0x20, 0x28, 0x24, 0x29 }; // autodetect
             byte[] trCommand = new byte[] { 0xbb, b1, b2, 0x05, 0x00, 0x14, 0x20, 0x28, 0x24, 0x29 };
 
             return trCommand;

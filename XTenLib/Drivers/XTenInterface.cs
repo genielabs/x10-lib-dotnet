@@ -21,8 +21,6 @@
  *     Project Homepage: https://github.com/genielabs/x10-lib-dotnet
  */
 
-using System;
-
 namespace XTenLib.Drivers
 {
     /// <summary>
