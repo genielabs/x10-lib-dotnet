@@ -75,7 +75,7 @@ namespace XTenLib
         private DateTime waitAckTimestamp = DateTime.Now;
         private DateTime lastReceivedTs = DateTime.Now;
         // Variables used for preventing duplicated messages coming from RF
-        private const uint MinRfRepeatDelayMs = 500;
+        private const uint MinRfRepeatDelayMs = 100;
         private DateTime lastRfReceivedTs = DateTime.Now;
         private string lastRfMessage = "";
 
@@ -957,7 +957,7 @@ namespace XTenLib
                                     OnRfCommandReceived(new RfCommandReceivedEventArgs(hf, X10HouseCode.NotSet, X10UnitCode.Unit_NotSet));
                                     break;
                                 case X10RfFunction.AllLightsOn:
-                                case X10RfFunction.AllLightsOff:
+                                case X10RfFunction.AllUnitsOff:
                                     if (houseCode != X10HouseCode.NotSet)
                                     {
                                         logger.Debug("Command {0} HouseCode {1}", hf, houseCode);
@@ -1083,7 +1083,7 @@ namespace XTenLib
 
                                     switch (command)
                                     {
-                                        case X10Command.All_Lights_Off:
+                                        case X10Command.All_Units_Off:
                                             if (houseCode != X10HouseCode.NotSet)
                                                 CommandEvent_AllUnitsOff(houseCode);
                                             break;

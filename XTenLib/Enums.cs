@@ -40,7 +40,6 @@ namespace XTenLib
         Off,
         Dim,
         Bright,
-        All_Lights_Off,
         Extended_Code,
         Hail_Request,
         Hail_Acknowledge,
@@ -130,8 +129,8 @@ namespace XTenLib
         NotSet = 0xFF,
         On = 0x00,
         Off = 0x01,
-        AllLightsOff = 0x80,
         AllLightsOn = 0x90,
+        AllUnitsOff = 0x80,
         Dim = 0x98,
         Bright = 0x88
     }
@@ -161,7 +160,8 @@ namespace XTenLib
         DoorSensor2_BatteryLow = 0x05,
         DoorSensor2_BatteryOk = 0x85,
 
-        Remote_Arm = 0x06,
+        Remote_ArmAway = 0x06,
+        Remote_ArmHome = 0x0E,
         Remote_Disarm = 0x86,
         Remote_LightOn = 0x46,
         Remote_LightOff = 0xC6,
