@@ -319,6 +319,84 @@ namespace XTenLib
         {
             get { return addressedModules; }
         }
+        
+        /// <summary>
+        /// Sends a raw message.
+        /// </summary>
+        /// <param name="message">The raw message.</param>
+        public void SendMessage(byte[] message)
+        {
+            try
+            {
+                if (message.Length > 1 && IsConnected)
+                {
+                    // Wait for message delivery acknowledge
+                    lock (waitAckMonitor)
+                    {
+                        // have a 500ms pause between each output message
+                        while ((DateTime.Now - lastReceivedTs).TotalMilliseconds < 500)
+                        {
+                            Thread.Sleep(1);
+                        }
+
+                        logger.Debug(BitConverter.ToString(message));
+                        if (!x10Interface.WriteData(message))
+                        {
+                            logger.Warn("Interface I/O error");
+                        }
+
+                        commandLastMessage = message;
+                        waitAckTimestamp = DateTime.Now;
+
+                        if (x10Interface.GetType().Equals(typeof(CM11)))
+                        {
+                            expectedChecksum = (byte)((message[0] + message[1]) & 0xff);
+                            communicationState = X10CommState.WaitingChecksum;
+                        }
+                        else
+                        {
+                            communicationState = X10CommState.WaitingAck;
+                        }
+
+                        while (commandResendAttempts < CommandResendMax && communicationState != X10CommState.Ready)
+                        {
+                            var elapsedFromWaitAck = DateTime.Now - waitAckTimestamp;
+                            while (elapsedFromWaitAck.TotalSeconds < CommandTimeoutSeconds && communicationState != X10CommState.Ready)
+                            {
+                                Thread.Sleep(1);
+                                elapsedFromWaitAck = DateTime.Now - waitAckTimestamp;
+                            }
+                            if (elapsedFromWaitAck.TotalSeconds >= CommandTimeoutSeconds && communicationState != X10CommState.Ready)
+                            {
+                                // Resend last message
+                                commandResendAttempts++;
+                                logger.Warn("Previous command timed out, resending ({0})", commandResendAttempts);
+                                if (!x10Interface.WriteData(commandLastMessage))
+                                {
+                                    logger.Warn("Interface I/O error");
+                                }
+                                waitAckTimestamp = DateTime.Now;
+                            }
+                        }
+                        commandResendAttempts = 0;
+                        commandLastMessage = new byte[0];
+                    }
+                }
+                else
+                {
+                    logger.Debug(BitConverter.ToString(message));
+                    if (!x10Interface.WriteData(message))
+                    {
+                        logger.Warn("Interface I/O error");
+                    }                      
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                gotReadWriteError = true;
+            }
+        }
 
         #endregion
 
@@ -772,80 +850,6 @@ namespace XTenLib
                     reader = null;
                 }
                 OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
-            }
-        }
-
-        private void SendMessage(byte[] message)
-        {
-            try
-            {
-                if (message.Length > 1 && IsConnected)
-                {
-                    // Wait for message delivery acknowledge
-                    lock (waitAckMonitor)
-                    {
-                        // have a 500ms pause between each output message
-                        while ((DateTime.Now - lastReceivedTs).TotalMilliseconds < 500)
-                        {
-                            Thread.Sleep(1);
-                        }
-
-                        logger.Debug(BitConverter.ToString(message));
-                        if (!x10Interface.WriteData(message))
-                        {
-                            logger.Warn("Interface I/O error");
-                        }
-
-                        commandLastMessage = message;
-                        waitAckTimestamp = DateTime.Now;
-
-                        if (x10Interface.GetType().Equals(typeof(CM11)))
-                        {
-                            expectedChecksum = (byte)((message[0] + message[1]) & 0xff);
-                            communicationState = X10CommState.WaitingChecksum;
-                        }
-                        else
-                        {
-                            communicationState = X10CommState.WaitingAck;
-                        }
-
-                        while (commandResendAttempts < CommandResendMax && communicationState != X10CommState.Ready)
-                        {
-                            var elapsedFromWaitAck = DateTime.Now - waitAckTimestamp;
-                            while (elapsedFromWaitAck.TotalSeconds < CommandTimeoutSeconds && communicationState != X10CommState.Ready)
-                            {
-                                Thread.Sleep(1);
-                                elapsedFromWaitAck = DateTime.Now - waitAckTimestamp;
-                            }
-                            if (elapsedFromWaitAck.TotalSeconds >= CommandTimeoutSeconds && communicationState != X10CommState.Ready)
-                            {
-                                // Resend last message
-                                commandResendAttempts++;
-                                logger.Warn("Previous command timed out, resending ({0})", commandResendAttempts);
-                                if (!x10Interface.WriteData(commandLastMessage))
-                                {
-                                    logger.Warn("Interface I/O error");
-                                }
-                                waitAckTimestamp = DateTime.Now;
-                            }
-                        }
-                        commandResendAttempts = 0;
-                        commandLastMessage = new byte[0];
-                    }
-                }
-                else
-                {
-                    logger.Debug(BitConverter.ToString(message));
-                    if (!x10Interface.WriteData(message))
-                    {
-                        logger.Warn("Interface I/O error");
-                    }                      
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex);
-                gotReadWriteError = true;
             }
         }
 

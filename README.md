@@ -69,6 +69,11 @@ if (x10.IsConnected)
     modC7.Bright(10);
 }
 
+// Sending a raw message.
+// The example below is the RF command A1 ON/OFF (RF works with CM15 only)
+x10.SendMessage(new byte[] { 0xEB, 0x20, 0x60, 0x9F, 0x00, 0xFF });
+x10.SendMessage(new byte[] { 0xEB, 0x20, 0x60, 0x9F, 0x20, 0xDF });
+
 // Disconnect the interface
 x10.Disconnect();
 
