@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XTenLib", "XTenLib\XTenLib.csproj", "{92933BA1-609C-4DE0-B29E-FDA37C7DC0EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.X10", "Test.X10\Test.X10.csproj", "{F294E092-807A-493C-85AD-BB8AA5C5AB22}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.CM15", "Test.CM15\Test.CM15.csproj", "{F294E092-807A-493C-85AD-BB8AA5C5AB22}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XTenLib.Tests", "XTenLib.Tests\XTenLib.Tests.csproj", "{3F2ECBE2-8D4E-4363-88DE-29478CBFACF6}"
 EndProject
