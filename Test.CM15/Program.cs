@@ -50,8 +50,9 @@ namespace Test.X10
             x10.Connect();
 
             // Sends A1 ON / OFF via RF
+            Thread.Sleep(1000);
             x10.SendMessage(new byte[] { 0xEB, 0x20, 0x60, 0x9F, 0x00, 0xFF });
-            Thread.Sleep(500);
+            Thread.Sleep(1000);
             x10.SendMessage(new byte[] { 0xEB, 0x20, 0x60, 0x9F, 0x20, 0xDF });
             
             // Prevent the program from quitting with a noop loop

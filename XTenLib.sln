@@ -83,7 +83,7 @@ Global
 		$0.TextStylePolicy = $5
 		$5.inheritsSet = null
 		$5.scope = application/xml
-		$0.XmlFormattingPolicy = $6
+		$0.XfmlFormattingPolicy = $6
 		$6.inheritsSet = Mono
 		$6.inheritsScope = application/xml
 		$6.scope = application/xml
