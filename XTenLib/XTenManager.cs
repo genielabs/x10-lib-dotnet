@@ -75,7 +75,8 @@ namespace XTenLib
         private DateTime waitAckTimestamp = DateTime.Now;
         private DateTime lastReceivedTs = DateTime.Now;
         // Variables used for preventing duplicated messages coming from RF
-        private const uint MinRfRepeatDelayMs = 100;
+        private const uint MinRfRepeatDelayMs = 300;
+        private DateTime firstRfReceivedTs = DateTime.Now;
         private DateTime lastRfReceivedTs = DateTime.Now;
         private string lastRfMessage = "";
 
@@ -909,13 +910,23 @@ namespace XTenLib
                             // Repeated messages check
                             if (isCodeValid)
                             {
-                                if (lastRfMessage == BitConverter.ToString(readData) && (lastReceivedTs - lastRfReceivedTs).TotalMilliseconds < MinRfRepeatDelayMs)
+                                if (lastRfMessage == BitConverter.ToString(readData))
                                 {
-                                    logger.Warn("Ignoring repeated message within {0}ms", MinRfRepeatDelayMs);
-                                    continue;
+                                    if ((DateTime.Now - lastRfReceivedTs).TotalMilliseconds < 150)
+                                    {
+                                        logger.Warn("Ignoring repeated message within {0}ms", 150);
+                                        if ((DateTime.Now - firstRfReceivedTs).TotalMilliseconds <= MinRfRepeatDelayMs)
+                                        {
+                                            lastRfReceivedTs = DateTime.Now;
+                                        }
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    firstRfReceivedTs = lastRfReceivedTs = DateTime.Now;
                                 }
                                 lastRfMessage = BitConverter.ToString(readData);
-                                lastRfReceivedTs = DateTime.Now;
                             }
 
                             logger.Debug("RFCOM: {0}", BitConverter.ToString(readData));
