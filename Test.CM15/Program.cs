@@ -16,13 +16,9 @@
   limitations under the License.
 */
 
-using System;
-using System.Threading;
-
 using XTenLib;
-using NLog;
 
-namespace Test.X10
+namespace Test.CM15
 {
     class MainClass
     {
