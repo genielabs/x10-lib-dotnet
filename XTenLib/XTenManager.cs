@@ -226,7 +226,7 @@ namespace XTenLib
                 if (connectionWatcher != null)
                 {
                     if (!connectionWatcher.Join(5000))
-                        connectionWatcher.Abort();
+                        connectionWatcher.Interrupt();
                     connectionWatcher = null;
                 }
                 disconnectRequested = false;
@@ -849,7 +849,7 @@ namespace XTenLib
                 if (reader != null)
                 {
                     if (!reader.Join(5000))
-                        reader.Abort();
+                        reader.Interrupt();
                     reader = null;
                 }
                 OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));

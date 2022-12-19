@@ -1,70 +1,36 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{92933BA1-609C-4DE0-B29E-FDA37C7DC0EF}</ProjectGuid>
+    <PackageId>XTenLib</PackageId>
+    <Version>1.1.0</Version>
+    <Authors>Generoso Martello</Authors>
+    <Company>G-Labs</Company>
+    <Description>X10 Home Automation library for .NET
+
+      Features
+      - Supports both *CM11* and *CM15* hardware
+      - Event driven
+      - Hot plug
+      - Automatically restabilish connection on error/disconnect
+      - Compatible with Mono</Description>
+    <PackageLicense>./LICENSE</PackageLicense>
+    <PackageProjectUrl>https://github.com/genielabs/x10-lib-dotnet/</PackageProjectUrl>
+    <PackageTags>x10 home automation cm11 cm15</PackageTags>
+    <RuntimeIdentifiers>win8-arm;linux-arm;win10-x64;osx.10.11-x64;linux-x64</RuntimeIdentifiers>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>XTenLib</RootNamespace>
-    <AssemblyName>XTenLib</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <ReleaseVersion>1.0</ReleaseVersion>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\XTenLib.xml</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="LibUsbDotNet, Version=2.2.8.104, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\LibUsbDotNet.2.2.8\lib\LibUsbDotNet.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c">
-      <HintPath>..\packages\NLog.4.5.10\lib\net45\NLog.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Drivers\CM15.cs" />
-    <Compile Include="Drivers\CM11.cs" />
-    <Compile Include="Drivers\XTenInterface.cs" />
-    <Compile Include="XTenManager.cs" />
-    <Compile Include="Utility.cs" />
-    <Compile Include="Enums.cs" />
-    <Compile Include="X10Module.cs" />
-    <Compile Include="Events.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <ItemGroup />
+
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="..\README.md">
       <Link>README.md</Link>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.2.0" />
+    <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+  </ItemGroup>
+
 </Project>
