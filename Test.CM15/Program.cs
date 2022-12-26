@@ -16,6 +16,8 @@
   limitations under the License.
 */
 
+using System;
+using System.Threading;
 using XTenLib;
 
 namespace Test.CM15
