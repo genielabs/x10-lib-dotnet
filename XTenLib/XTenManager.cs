@@ -25,9 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 using NLog;
 using XTenLib.Drivers;
@@ -225,8 +223,15 @@ namespace XTenLib
             {
                 if (connectionWatcher != null)
                 {
-                    if (!connectionWatcher.Join(5000))
-                        connectionWatcher.Interrupt();
+                    try
+                    {
+                        Thread.Sleep(2000);
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                    connectionWatcher.Interrupt();
                     connectionWatcher = null;
                 }
                 disconnectRequested = false;
@@ -848,8 +853,15 @@ namespace XTenLib
                 // Stop the Reader task
                 if (reader != null)
                 {
-                    if (!reader.Join(5000))
-                        reader.Interrupt();
+                    try
+                    {
+                        Thread.Sleep(2000);
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                    reader.Interrupt();
                     reader = null;
                 }
                 OnConnectionStatusChanged(new ConnectionStatusChangedEventArgs(false));
@@ -1188,14 +1200,7 @@ namespace XTenLib
                         Thread.Sleep(3000);
                         if (!disconnectRequested)
                         {
-                            try
-                            {
-                                Open();
-                            }
-                            catch (Exception e)
-                            { 
-                                logger.Error(e);
-                            }
+                            Open();
                         }
                     }
                     catch (Exception e)
@@ -1204,7 +1209,16 @@ namespace XTenLib
                     }
                 }
                 if (!disconnectRequested)
-                    Thread.Sleep(1000);
+                {
+                    try
+                    {
+                        Thread.Sleep(1000);
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
             }
         }
 
