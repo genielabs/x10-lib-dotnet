@@ -63,7 +63,7 @@ namespace XTenLib.Drivers
             }
             catch (Exception e)
             {
-                XTenManager.logger.Error(e);
+                XTenManager.Logger.Error(e);
             }
             try
             {
@@ -71,7 +71,7 @@ namespace XTenLib.Drivers
             }
             catch (Exception e)
             {
-                XTenManager.logger.Error(e);
+                XTenManager.Logger.Error(e);
             }
         }
 
@@ -113,7 +113,7 @@ namespace XTenLib.Drivers
             }
             catch (Exception e)
             {
-                XTenManager.logger.Error(e);
+                XTenManager.Logger.Error(e);
                 success = false;
             }
             return success;
@@ -133,7 +133,7 @@ namespace XTenLib.Drivers
                 }
                 catch (Exception e)
                 {
-                    XTenManager.logger.Error(e);
+                    XTenManager.Logger.Error(e);
                 }
             }
             myUsbDevice = null;
@@ -177,7 +177,7 @@ namespace XTenLib.Drivers
             }
             catch (Exception e)
             {
-                XTenManager.logger.Error(e);
+                XTenManager.Logger.Error(e);
             }
             usbReadTransfer.Dispose();
 

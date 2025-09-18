@@ -84,7 +84,7 @@ namespace XTenLib.Drivers
             }
             catch (Exception e)
             {
-                XTenManager.logger.Error(e);
+                XTenManager.Logger.Error(e);
             }
             return success;
         }
@@ -105,7 +105,7 @@ namespace XTenLib.Drivers
                 }
                 catch (Exception e)
                 {
-                    XTenManager.logger.Error(e);
+                    XTenManager.Logger.Error(e);
                 }
                 serialPort = null;
             }

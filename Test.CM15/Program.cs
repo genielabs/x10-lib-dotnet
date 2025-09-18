@@ -17,7 +17,12 @@
 */
 
 using System;
+using System.IO;
 using System.Threading;
+using GLabs.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XTenLib;
 
 namespace Test.CM15
@@ -26,9 +31,21 @@ namespace Test.CM15
     {
         public static void Main(string[] args)
         {
-            // NOTE: To disable debug output uncomment the following two lines
-            //LogManager.Configuration.LoggingRules.RemoveAt(0);
-            //LogManager.Configuration.Reload();
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
+
+            var serviceProvider = new ServiceCollection()
+                .AddLogging(builder =>
+                {
+                    builder.AddConfiguration(configuration.GetSection("Logging"));
+                    builder.AddConsole();
+                })
+                .BuildServiceProvider();
+
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+            LogManager.Initialize(loggerFactory);
 
             Console.WriteLine("XTenLib test program, waiting for connection.");
             var x10 = new XTenManager();

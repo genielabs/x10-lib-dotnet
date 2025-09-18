@@ -15,7 +15,6 @@
     <PackageLicense>./LICENSE</PackageLicense>
     <PackageProjectUrl>https://github.com/genielabs/x10-lib-dotnet/</PackageProjectUrl>
     <PackageTags>x10 home automation cm11 cm15</PackageTags>
-    <RuntimeIdentifiers>win8-arm;linux-arm;win10-x64;osx.10.11-x64;linux-x64</RuntimeIdentifiers>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net472;net6.0;netstandard2.0</TargetFrameworks>
     <AssemblyVersion>1.1.1.0</AssemblyVersion>
@@ -28,11 +27,21 @@
       <Link>README.md</Link>
     </None>
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="5.2.0" />
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
+    <PackageReference Include="System.IO.Ports" Version="9.0.9" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net472' ">
+    <PackageReference Include="System.IO.Ports" Version="4.7.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="GLabs.Logging" Version="1.0.1" />
+    <PackageReference Include="LibUsbDotNet" Version="2.2.75" />
   </ItemGroup>
 
 </Project>

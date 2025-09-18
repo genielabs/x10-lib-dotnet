@@ -26,8 +26,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
-
-using NLog;
+using GLabs.Logging;
 using XTenLib.Drivers;
 
 namespace XTenLib
@@ -41,7 +40,7 @@ namespace XTenLib
 
         #region Private Fields
 
-        internal static Logger logger = LogManager.GetCurrentClassLogger();
+        internal static readonly Logger Logger = LogManager.GetLogger("XTenLib");
 
         // X10 objects and configuration
         private XTenInterface x10Interface;
@@ -347,10 +346,10 @@ namespace XTenLib
                             Thread.Sleep(1);
                         }
 
-                        logger.Debug(BitConverter.ToString(message));
+                        Logger.Debug(BitConverter.ToString(message));
                         if (!x10Interface.WriteData(message))
                         {
-                            logger.Warn("Interface I/O error");
+                            Logger.Warn("Interface I/O error");
                         }
 
                         commandLastMessage = message;
@@ -378,10 +377,10 @@ namespace XTenLib
                             {
                                 // Resend last message
                                 commandResendAttempts++;
-                                logger.Warn("Previous command timed out, resending ({0})", commandResendAttempts);
+                                Logger.Warn("Previous command timed out, resending ({0})", commandResendAttempts);
                                 if (!x10Interface.WriteData(commandLastMessage))
                                 {
-                                    logger.Warn("Interface I/O error");
+                                    Logger.Warn("Interface I/O error");
                                 }
                                 waitAckTimestamp = DateTime.Now;
                             }
@@ -392,16 +391,16 @@ namespace XTenLib
                 }
                 else
                 {
-                    logger.Debug(BitConverter.ToString(message));
+                    Logger.Debug(BitConverter.ToString(message));
                     if (!x10Interface.WriteData(message))
                     {
-                        logger.Warn("Interface I/O error");
+                        Logger.Warn("Interface I/O error");
                     }                      
                 }
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                Logger.Error(ex);
                 gotReadWriteError = true;
             }
         }
@@ -801,7 +800,7 @@ namespace XTenLib
             }
             catch (Exception e)
             { 
-                logger.Error(e);
+                Logger.Error(e);
             }
         }
 
@@ -847,7 +846,7 @@ namespace XTenLib
                 }
                 catch (Exception e)
                 {
-                    logger.Error(e);
+                    Logger.Error(e);
                 }
                 gotReadWriteError = true;
                 // Stop the Reader task
@@ -877,18 +876,18 @@ namespace XTenLib
                     byte[] readData = x10Interface.ReadData();
                     if (readData.Length > 0)
                     {
-                        logger.Debug(BitConverter.ToString(readData));
+                        Logger.Debug(BitConverter.ToString(readData));
                         // last command ACK timeout
                         var elapsedFromWaitAck = DateTime.Now - waitAckTimestamp;
                         if (elapsedFromWaitAck.TotalSeconds >= CommandTimeoutSeconds && communicationState != X10CommState.Ready)
                         {
-                            logger.Warn("Command acknowledge timeout");
+                            Logger.Warn("Command acknowledge timeout");
                             communicationState = X10CommState.Ready;
                         }
                         // last command succesfully sent
                         if (communicationState == X10CommState.WaitingAck && readData[0] == (int)X10CommandType.PLC_Ready && readData.Length <= 2) // ack received
                         {
-                            logger.Debug("Command succesfull");
+                            Logger.Debug("Command succesfull");
                             communicationState = X10CommState.Ready;
                         }
                         else if ((readData.Length >= 13 || (readData.Length == 2 && readData[0] == 0xFF && readData[1] == 0x00)) && !isInterfaceReady)
@@ -900,7 +899,7 @@ namespace XTenLib
                         else if (readData.Length == 2 && communicationState == X10CommState.WaitingChecksum && readData[0] == expectedChecksum && readData[1] == 0x00)
                         {
                             // checksum is received only from CM11
-                            logger.Debug("Received checksum {0}, expected {1}", BitConverter.ToString(readData), expectedChecksum.ToString("X2"));
+                            Logger.Debug("Received checksum {0}, expected {1}", BitConverter.ToString(readData), expectedChecksum.ToString("X2"));
                             //TODO: checksum verification not handled, we just reply 0x00 (OK)
                             SendMessage(new byte[] { 0x00 });
                             communicationState = X10CommState.WaitingAck;
@@ -908,7 +907,7 @@ namespace XTenLib
                         else if (readData[0] == (int)X10CommandType.Macro)
                         {
                             lastReceivedTs = DateTime.Now;
-                            logger.Debug("MACRO: {0}", BitConverter.ToString(readData));
+                            Logger.Debug("MACRO: {0}", BitConverter.ToString(readData));
                         }
                         else if (readData[0] == (int)X10CommandType.RF)
                         {
@@ -928,7 +927,7 @@ namespace XTenLib
                                 {
                                     if ((DateTime.Now - lastRfRepeatedTs).TotalMilliseconds < RfRepeatGap)
                                     {
-                                        logger.Warn("Ignoring repeated message within {0}ms", RfRepeatGap);
+                                        Logger.Warn("Ignoring repeated message within {0}ms", RfRepeatGap);
                                         if ((DateTime.Now - firstRfReceivedTs).TotalMilliseconds <= MinRfRepeatDelayMs)
                                         {
                                             lastRfRepeatedTs = DateTime.Now;
@@ -945,7 +944,7 @@ namespace XTenLib
                                 lastRfMessage = BitConverter.ToString(readData);
                             }
 
-                            logger.Debug("RFCOM: {0}", BitConverter.ToString(readData));
+                            Logger.Debug("RFCOM: {0}", BitConverter.ToString(readData));
                             OnRfDataReceived(new RfDataReceivedEventArgs(readData));
 
                             // Decode received 32 bit message
@@ -958,12 +957,12 @@ namespace XTenLib
                                 uint securityAddress = BitConverter.ToUInt32(new byte[] { readData[2], readData[6], readData[7], 0x00 }, 0);
                                 if (securityEvent != X10RfSecurityEvent.NotSet)
                                 {
-                                    logger.Debug("Security Event {0} Address {1}", securityEvent, securityAddress);
+                                    Logger.Debug("Security Event {0} Address {1}", securityEvent, securityAddress);
                                     OnRfSecurityReceived(new RfSecurityReceivedEventArgs(securityEvent, securityAddress));
                                 }
                                 else
                                 {
-                                    logger.Warn("Could not parse security event");
+                                    Logger.Warn("Could not parse security event");
                                 }
                             }
                             else if (isCodeValid)
@@ -980,7 +979,7 @@ namespace XTenLib
                                 {
                                 case X10RfFunction.Dim:
                                 case X10RfFunction.Bright:
-                                    logger.Debug("Command {0}", hf);
+                                    Logger.Debug("Command {0}", hf);
                                     if (hf == X10RfFunction.Dim)
                                         CommandEvent_Dim((byte)X10Defs.DimBrightStep);
                                     else
@@ -991,7 +990,7 @@ namespace XTenLib
                                 case X10RfFunction.AllUnitsOff:
                                     if (houseCode != X10HouseCode.NotSet)
                                     {
-                                        logger.Debug("Command {0} HouseCode {1}", hf, houseCode);
+                                        Logger.Debug("Command {0} HouseCode {1}", hf, houseCode);
                                         if (hf == X10RfFunction.AllLightsOn)
                                             CommandEvent_AllLightsOn(houseCode);
                                         else
@@ -1000,11 +999,11 @@ namespace XTenLib
                                     }
                                     else
                                     {
-                                        logger.Warn("Unable to decode house code value");
+                                        Logger.Warn("Unable to decode house code value");
                                     }
                                     break;
                                 case X10RfFunction.NotSet:
-                                    logger.Warn("Unable to decode function value");
+                                    Logger.Warn("Unable to decode function value");
                                     break;
                                 default:
                                     // Parse unit code
@@ -1022,7 +1021,7 @@ namespace XTenLib
                                         Enum.TryParse<X10UnitCode>("Unit_" + uc.ToString(), out unitCode);
                                         if (unitCode != X10UnitCode.Unit_NotSet)
                                         {
-                                            logger.Debug("Command {0} HouseCode {1} UnitCode {2}", fn, houseCode, unitCode.Value());
+                                            Logger.Debug("Command {0} HouseCode {1} UnitCode {2}", fn, houseCode, unitCode.Value());
                                             UnselectModules();
                                             SelectModule(houseCode.ToString() + unitCode.Value().ToString());
                                             if (fn == X10RfFunction.On)
@@ -1033,7 +1032,7 @@ namespace XTenLib
                                         }
                                         else
                                         {
-                                            logger.Warn("Could not parse unit code");
+                                            Logger.Warn("Could not parse unit code");
                                         }
                                         break;
                                     }
@@ -1042,7 +1041,7 @@ namespace XTenLib
                             }
                             else
                             {
-                                logger.Warn("Bad Rf message received");
+                                Logger.Warn("Bad Rf message received");
                             }
                         }
                         else if ((readData[0] == (int)X10CommandType.PLC_Poll) && readData.Length <= 2)
@@ -1058,7 +1057,7 @@ namespace XTenLib
                         else if ((readData[0] == (int)X10CommandType.PLC_Poll))
                         {
                             lastReceivedTs = DateTime.Now;
-                            logger.Debug("PLCRX: {0}", BitConverter.ToString(readData));
+                            Logger.Debug("PLCRX: {0}", BitConverter.ToString(readData));
 
                             if (readData.Length <= 3) continue;
                             int messageLength = readData[1];
@@ -1080,8 +1079,8 @@ namespace XTenLib
                                 Array.Reverse(messageData, 0, messageData.Length);
                             }
 
-                            logger.Debug("FNMAP: {0}", BitConverter.ToString(functionBitmap));
-                            logger.Debug("DATA : {0}", BitConverter.ToString(messageData));
+                            Logger.Debug("FNMAP: {0}", BitConverter.ToString(functionBitmap));
+                            Logger.Debug("DATA : {0}", BitConverter.ToString(messageData));
 
                             for (int b = 0; b < messageData.Length; b++)
                             {
@@ -1092,7 +1091,7 @@ namespace XTenLib
                                     X10UnitCode unitCode = (X10UnitCode)Convert.ToInt16(messageData[b].ToString("X2").Substring(1, 1), 16);
                                     string address = Utility.HouseUnitCodeFromEnum(houseCode, unitCode);
 
-                                    logger.Debug("      {0}) Address = {1}", b, address);
+                                    Logger.Debug("      {0}) Address = {1}", b, address);
 
                                     if (newAddressData)
                                     {
@@ -1109,8 +1108,8 @@ namespace XTenLib
                                     var houseCode = X10HouseCode.NotSet;
                                     Enum.TryParse<X10HouseCode>(Convert.ToInt16(messageData[b].ToString("X2").Substring(0, 1), 16).ToString(), out houseCode);
 
-                                    logger.Debug("      {0}) House code = {1}", b, houseCode);
-                                    logger.Debug("      {0})    Command = {1}", b, command);
+                                    Logger.Debug("      {0}) House code = {1}", b, houseCode);
+                                    Logger.Debug("      {0})    Command = {1}", b, command);
 
                                     switch (command)
                                     {
@@ -1179,7 +1178,7 @@ namespace XTenLib
                     if (!e.GetType().Equals(typeof(TimeoutException)) && !e.GetType().Equals(typeof(OverflowException)))
                     {
                         gotReadWriteError = true;
-                        logger.Error(e);
+                        Logger.Error(e);
                     }
                 }
             }
@@ -1205,7 +1204,7 @@ namespace XTenLib
                     }
                     catch (Exception e)
                     {
-                        logger.Error(e);
+                        Logger.Error(e);
                     }
                 }
                 if (!disconnectRequested)
