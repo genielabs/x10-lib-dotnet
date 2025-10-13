@@ -13,6 +13,10 @@
 - Automatically restabilish connection on error/disconnect
 - Compatible with Mono
 
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/genielabs/x10-lib-dotnet)
+
+
 ## Requirements for using with CM15 interface
 
 ### Linux / Mac OSX
